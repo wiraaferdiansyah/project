@@ -5,7 +5,7 @@ import streamlit as st
 from babel.numbers import format_currency
 sns.set(style='dark')
 
-all_df = pd.read_csv("main_data.csv")
+all_df = pd.read_csv("https://raw.githubusercontent.com/wiraaferdiansyah/project/main/dashboard/main_data.csv")
 
 all_df["order_purchase_timestamp"] = pd.to_datetime(all_df["order_purchase_timestamp"])
 all_df["order_delivered_customer_date"] = pd.to_datetime(all_df["order_delivered_customer_date"])
