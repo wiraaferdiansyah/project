@@ -50,29 +50,41 @@ with col2:
     total_revenue = format_currency(monthly_orders_df.revenue.sum(), "AUD", locale='es_CO')
     st.metric("Total Revenue", value=total_revenue)
     st.markdown("---")
- 
-min_date = all_df["order_purchase_timestamp"].min()
-max_date = all_df["order_purchase_timestamp"].max()
 
-start_date, end_date = st.date_input(
-        label='Rentang Waktu',min_value=min_date,
-        max_value=max_date,
-        value=[min_date, max_date]
-    )
+############################################
 
-main_df = all_df[(all_df["order_purchase_timestamp"] >= str(start_date)) & 
-                (all_df["order_purchase_timestamp"] <= str(end_date))]
+latest_year = all_df["order_purchase_timestamp"].dt.year.max()
 
-plt.figure(figsize=(10, 5)) 
-plt.plot(monthly_orders_df["order_purchase_timestamp"], monthly_orders_df["order_count"], marker='o', linewidth=2, color="#72BCD4") 
-plt.title("Number of Orders per Month", loc="center", fontsize=20) 
-plt.xticks(fontsize=10, rotation=90) 
-plt.yticks(fontsize=10) 
 
-# Menampilkan plot menggunakan st.pyplot()
-st.pyplot(plt)
+latest_year_orders = all_df[all_df["order_purchase_timestamp"].dt.year == latest_year]
+latest_year = int(all_df["order_purchase_timestamp"].dt.year.max())
 
-##########################
+start_date = pd.to_datetime(f"{latest_year}-01-01")
+end_date = pd.to_datetime(f"{latest_year}-12-31")
+selected_date_range = st.date_input(
+    "Select Date Range",
+    value=(start_date, end_date),
+    min_value=start_date,
+    max_value=end_date,
+)
+
+latest_year_orders["order_purchase_date"] = latest_year_orders[
+    "order_purchase_timestamp"
+].dt.date
+
+filtered_orders = latest_year_orders[
+    (latest_year_orders["order_purchase_date"] >= selected_date_range[0])
+    & (latest_year_orders["order_purchase_date"] <= selected_date_range[1])
+]
+
+orders_per_day = filtered_orders.groupby(
+    filtered_orders["order_purchase_date"]
+).size()
+
+# display the bar chart
+st.title(f"Number of Orders in {latest_year}")
+st.bar_chart(orders_per_day, height=400)
+
 
 st.subheader("Best & Worst Selling Product")
     
@@ -98,4 +110,19 @@ ax[1].set_title("Worst Performing Product", loc="center", fontsize=50)
 ax[1].tick_params(axis='y', labelsize=35)
 ax[1].tick_params(axis='x', labelsize=30)
     
+st.pyplot(fig)
+
+# Menampilkan rating
+rating_counts = all_df["review_score"].value_counts().sort_index()
+percentage_ratings = (rating_counts / rating_counts.sum()) * 100
+percentage_ratings.index = percentage_ratings.index.astype(int)
+labels = [f"{rating} star" for rating in percentage_ratings.index]
+
+# Plot
+fig, ax = plt.subplots(figsize=(8, 6))
+ax.pie(percentage_ratings, labels=labels, autopct="%1.1f%%", startangle=140)
+ax.set_title("Percentage of Review Ratings")
+ax.axis("equal")
+
+# Tampilkan di Streamlit
 st.pyplot(fig)
